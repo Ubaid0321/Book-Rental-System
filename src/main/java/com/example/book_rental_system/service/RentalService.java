@@ -4,6 +4,9 @@ import com.example.book_rental_system.dto.RentalDto;
 import com.example.book_rental_system.entity.Book;
 import com.example.book_rental_system.entity.Rental;
 import com.example.book_rental_system.entity.User;
+import com.example.book_rental_system.exception.BookAlreadyRentedException;
+import com.example.book_rental_system.exception.InvalidRequestException;
+import com.example.book_rental_system.exception.ResourceNotFoundException;
 import com.example.book_rental_system.repositry.BookRepository;
 import com.example.book_rental_system.repositry.RentalRepository;
 import com.example.book_rental_system.repositry.UserRepository;
@@ -23,19 +26,31 @@ public class RentalService {
 
     // Rent a book
     public Rental rentBook(RentalDto dto) {
+
+        // 1️⃣ Validate user
         User user = userRepository.findById(dto.getUserId())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User with ID " + dto.getUserId() + " not found"));
 
+        // 2️⃣ Validate book
         Book book = bookRepository.findById(dto.getBookId())
-                .orElseThrow(() -> new RuntimeException("Book not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Book with ID " + dto.getBookId() + " not found"));
 
+        // 3️⃣ Check if book is already rented
         if (!book.isAvailable()) {
-            throw new RuntimeException("Book is already rented");
+            throw new BookAlreadyRentedException("Book '" + book.getTitle() + "' is already rented");
         }
 
+        // 4️⃣ Optional: Check user rental limit (max 5 books)
+        long rentedCount = rentalRepository.countByUserIdAndStatus(user.getId(), "RENTED");
+        if (rentedCount >= 5) {
+            throw new InvalidRequestException("User cannot rent more than 5 books at a time");
+        }
+
+        // 5️⃣ Update book availability
         book.setAvailable(false);
         bookRepository.save(book);
 
+        // 6️⃣ Create rental record
         Rental rental = Rental.builder()
                 .user(user)
                 .book(book)
@@ -49,12 +64,13 @@ public class RentalService {
     // Return a book
     public Rental returnBook(Long rentalId) {
         Rental rental = rentalRepository.findById(rentalId)
-                .orElseThrow(() -> new RuntimeException("Rental not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Rental with ID " + rentalId + " not found"));
 
         rental.setReturnDate(LocalDate.now());
         rental.setStatus("RETURNED");
 
-        Book book = rental.getBook(); // ✅ use the book reference
+        // Update book availability
+        Book book = rental.getBook();
         book.setAvailable(true);
         bookRepository.save(book);
 
@@ -63,6 +79,10 @@ public class RentalService {
 
     // Get all rentals for a specific user
     public List<Rental> getUserRentals(Long userId) {
+        // Validate user existence
+        userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User with ID " + userId + " not found"));
+
         return rentalRepository.findByUserId(userId);
     }
 

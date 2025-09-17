@@ -9,4 +9,6 @@ import java.util.List;
 public interface RentalRepository extends JpaRepository<Rental, Long> {
     List<Rental> findByUserId(Long userId);
     List<Rental> findByBookId(Long bookId);
+
+    long countByUserIdAndStatus(Long id, String rented);
 }
