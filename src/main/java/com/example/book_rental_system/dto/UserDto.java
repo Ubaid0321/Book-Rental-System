@@ -1,6 +1,6 @@
 package com.example.book_rental_system.dto;
-import lombok.*;
 
+import lombok.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 
@@ -11,12 +11,11 @@ import jakarta.validation.constraints.NotBlank;
 public class UserDto {
     private Long id;
 
-    @NotBlank
+    @NotBlank(message = "Name is required")
     private String name;
 
-    @Email @NotBlank
+    @Email(message = "Invalid email")
     private String email;
 
-    @NotBlank
     private String role;
 }

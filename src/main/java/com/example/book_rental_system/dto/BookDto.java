@@ -1,7 +1,6 @@
 package com.example.book_rental_system.dto;
 
 import lombok.*;
-
 import jakarta.validation.constraints.NotBlank;
 
 @Data
@@ -11,10 +10,12 @@ import jakarta.validation.constraints.NotBlank;
 public class BookDto {
     private Long id;
 
-    @NotBlank
+    @NotBlank(message = "Title is required")
     private String title;
 
+    @NotBlank(message = "Author is required")
     private String author;
+
     private String genre;
-    private boolean isAvailable;
+    private boolean available;
 }
